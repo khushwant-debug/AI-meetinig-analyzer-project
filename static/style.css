@@ -1,0 +1,397 @@
+/* ================= RESET ================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+/* ================= BODY ================= */
+body {
+    font-family: 'Roboto', sans-serif;
+
+    background: linear-gradient(135deg, #f6f8fb, #e9f0f6);
+    color: #222;
+
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+
+    padding: 40px 20px;
+
+    transition: background 0.3s, color 0.3s;
+}
+
+
+/* ================= APP WRAPPER ================= */
+.app-wrapper {
+    width: 100%;
+    max-width: 1050px;
+}
+
+
+
+/* ================= HEADER ================= */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 35px;
+}
+
+.app-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.app-header p {
+    font-size: 14px;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+
+/* ================= THEME BUTTON ================= */
+.theme-btn {
+    background: #fff;
+    border: none;
+
+    padding: 8px 12px;
+    border-radius: 10px;
+
+    cursor: pointer;
+
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+
+
+/* ================= CARD (GLOBAL) ================= */
+.card {
+    background: #ffffff;
+
+    border-radius: 14px;
+
+    padding: 25px;
+
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+}
+
+
+
+/* ================= SECTION TITLE ================= */
+.section-title {
+    margin-bottom: 18px;
+    font-size: 18px;
+}
+
+
+
+/* ================= INPUT SECTION ================= */
+.input-section {
+    margin-bottom: 40px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+
+
+/* ================= INPUTS ================= */
+input,
+select,
+textarea {
+    width: 100%;
+
+    padding: 14px;
+
+    border-radius: 10px;
+    border: 1.5px solid #ddd;
+
+    font-size: 14px;
+
+    outline: none;
+}
+
+textarea {
+    height: 180px;
+    resize: vertical;
+}
+
+
+
+/* ================= BUTTON GROUP ================= */
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+}
+
+
+
+/* ================= MAIN BUTTONS ================= */
+#analyze-btn,
+#clear-btn {
+    height: 42px;
+    width: 160px;
+
+    border: none;
+    border-radius: 8px;
+
+    font-weight: 500;
+    cursor: pointer;
+
+    transition: all 0.2s;
+}
+
+#analyze-btn {
+    background: #4f8cff;
+    color: white;
+}
+
+#clear-btn {
+    background: #e74c3c;
+    color: white;
+}
+
+#analyze-btn:hover,
+#clear-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.92;
+}
+
+
+
+/* ================= SMALL BUTTONS ================= */
+.small-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+
+    border-radius: 7px;
+    border: none;
+
+    background: #ececec;
+    cursor: pointer;
+}
+
+.small-btn:hover {
+    background: #dcdcdc;
+}
+
+
+
+/* ================= OUTPUT SECTION ================= */
+.output-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 22px;
+}
+
+
+
+/* ================= CARD HEADER ================= */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 10px;
+}
+
+
+
+/* ================= TEXT ================= */
+.ai-label {
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.confidence {
+    margin-top: 10px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+ul {
+    padding-left: 18px;
+    margin-top: 8px;
+}
+
+li {
+    margin-bottom: 6px;
+}
+
+/*           mic                    */
+
+.mic-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.mic-group button {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: #222;
+    color: white;
+}
+
+
+/* ================= MINI ACTIONS ================= */
+.mini-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+
+
+/* ================= LOADER ================= */
+.loader {
+    margin: 15px auto;
+
+    width: 36px;
+    height: 36px;
+
+    border: 4px solid #ddd;
+    border-top: 4px solid #4f8cff;
+
+    border-radius: 50%;
+
+    animation: spin 1s linear infinite;
+}
+
+.hidden {
+    display: none;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ================= CHAT SECTION ================= */
+
+.chat-section {
+    margin-top: 30px;
+}
+
+.chat-box {
+    height: 280px;
+    overflow-y: auto;
+    padding: 12px;
+    background: #f4f6f8;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* message bubbles */
+.msg {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.user-msg {
+    align-self: flex-end;
+    background: #4f8cff;
+    color: white;
+}
+
+.ai-msg {
+    align-self: flex-start;
+    background: #e3e6ea;
+}
+
+/* input row */
+.chat-input {
+    display: flex;
+    gap: 8px;
+}
+
+.chat-input input {
+    flex: 1;
+}
+
+/* dark mode */
+body.dark .chat-box {
+    background: #22252d;
+}
+
+body.dark .ai-msg {
+    background: #2f3440;
+}
+
+
+
+/* ================= FOOTER ================= */
+.app-footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 13px;
+    opacity: 0.6;
+}
+
+
+
+/* ================= DARK MODE ================= */
+body.dark {
+    background: #0f1117;
+    color: #eaeaea;
+}
+
+body.dark .card {
+    background: #1b1e26;
+}
+
+body.dark input,
+body.dark select,
+body.dark textarea {
+    background: #2a2d36;
+    color: white;
+    border-color: #3a3d45;
+}
+
+body.dark .small-btn {
+    background: #2e323d;
+    color: white;
+}
+
+body.dark .theme-btn {
+    background: #2e323d;
+    color: white;
+}
+
+
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 768px) {
+
+    .button-group {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #analyze-btn,
+    #clear-btn {
+        width: 100%;
+    }
+
+}

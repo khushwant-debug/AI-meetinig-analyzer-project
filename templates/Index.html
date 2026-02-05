@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Smart Meeting Analyzer</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+
+
+<body>
+
+<!-- ================= APP WRAPPER (NEW FOR CENTERING) ================= -->
+<div class="app-wrapper">
+
+
+    <!-- ================= HEADER ================= -->
+    <header class="app-header">
+        <div>
+            <h1>AI Smart Meeting Analyzer</h1>
+            <p>Convert meeting notes into summaries, decisions and action items</p>
+        </div>
+
+        <button id="theme-toggle" class="theme-btn">🌙</button>
+    </header>
+
+
+
+    <!-- ================= MAIN ================= -->
+    <main>
+
+
+        <!-- ================================================= -->
+        <!-- INPUT SECTION -->
+        <!-- ================================================= -->
+        <section class="input-section card">
+
+            <h2 class="section-title">New Meeting</h2>
+
+            <!-- Title -->
+            <input
+                type="text"
+                id="meeting-title"
+                placeholder="Meeting Title (Client Sync – ABC Corp)"
+                class="meeting-title"
+            />
+
+            <!-- Type -->
+            <select id="meeting-type" class="meeting-type">
+                <option value="internal">Internal Meeting</option>
+                <option value="client">Client Meeting</option>
+                <option value="review">Review Meeting</option>
+            </select>
+
+            <!-- Notes -->
+            <textarea id="meeting-notes" placeholder="Paste your meeting notes here..."></textarea>
+
+            <input type="file" id="audio-upload" accept="audio/*">
+            <button id="transcribe-btn">Transcribe Audio</button>
+
+
+            <div class="mic-group">
+            <button id="start-record">🎤 Start Live</button>
+            <button id="stop-record">⏹ Stop</button>
+            </div>
+
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button id="analyze-btn">Analyze Meeting</button>
+                <button id="clear-btn">Clear</button>
+            </div>
+
+            <!-- Loader -->
+            <div id="loader" class="loader hidden"></div>
+
+        </section>
+
+
+
+        <!-- ================================================= -->
+        <!-- OUTPUT SECTION -->
+        <!-- ================================================= -->
+        <section class="output-section">
+
+
+            <!-- SUMMARY CARD -->
+            <div class="card">
+
+                <div class="card-header">
+                    <h2>Summary</h2>
+                    <button id="download-pdf" class="small-btn">📄 PDF</button>
+                </div>
+
+                <small class="ai-label">AI Generated Output</small>
+
+                <h3 id="meeting-title-output"></h3>
+
+                <p id="summary-text">AI output will appear here</p>
+                <p id="confidence-score" class="confidence"></p>
+
+                <div class="mini-actions">
+                    <button id="copy-summary" class="small-btn">Copy</button>
+                    <button id="download-summary" class="small-btn">Download</button>
+                </div>
+            </div>
+
+
+
+            <!-- KEY POINTS -->
+            <div class="card">
+                <h2>Key Points</h2>
+                <ul id="key-points-list"></ul>
+            </div>
+
+
+
+            <!-- DECISIONS -->
+            <div class="card">
+                <h2>Decisions</h2>
+                <ul id="decisions-list"></ul>
+            </div>
+
+
+
+            <!-- ACTION ITEMS -->
+            <div class="card">
+                <h2>Action Items</h2>
+                <ul id="action-items-list"></ul>
+            </div>
+
+
+        </section>
+
+        <!-- ================= CHAT SECTION ================= -->
+<section class="chat-section card">
+
+    <h2>Ask AI about this meeting</h2>
+
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="chat-input">
+        <input
+            type="text"
+            id="chat-question"
+            placeholder="Ask something like: Who is responsible for payment?"
+        />
+        <button id="send-chat">Send</button>
+    </div>
+
+</section>
+
+
+    </main>
+
+
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="app-footer">
+        <p>© 2026 AI Smart Meeting Analyzer</p>
+    </footer>
+
+
+</div>
+
+
+<!-- JS -->
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
