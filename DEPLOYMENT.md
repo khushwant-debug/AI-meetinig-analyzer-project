@@ -1,16 +1,15 @@
 # AI Meeting Analyzer - Deployment Guide
 
-## 📁 Project Structure
+## 📁 Final Project Structure
 
 ```
 AI Meeting Analyzer/
 ├── streamlit_app.py       # Main Streamlit application
-├── model_logic.py         # AI/ML logic (Ollama, Whisper, PDF)
+├── model_logic.py         # AI logic (Groq API)
 ├── requirements.txt       # Python dependencies
 ├── .streamlit/
 │   └── config.toml        # Streamlit configuration
-├── DEPLOYMENT.md          # This file
-└── README.md              # Project documentation
+└── DEPLOYMENT.md          # This file
 ```
 
 ## 🚀 Local Development
@@ -18,12 +17,11 @@ AI Meeting Analyzer/
 ### Prerequisites
 
 1. **Python 3.8+** installed
-2. **Ollama** installed and running locally
+2. **Groq API Key** - Get one at https://console.groq.com/
 
 ### Installation
 
-```
-bash
+```bash
 # Clone or navigate to project
 cd "AI Project"
 
@@ -35,16 +33,18 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Install optional dependencies (if needed)
-pip install openai-whisper reportlab ollama
+pip install reportlab openai-whisper
 ```
 
 ### Running Locally
 
 ```
 bash
-# Start Ollama (in a separate terminal)
-ollama serve
-ollama pull llama3
+# Set your API key (Windows)
+set GROQ_API_KEY=your_api_key_here
+
+# Set your API key (Mac/Linux)
+export GROQ_API_KEY=your_api_key_here
 
 # Run Streamlit app
 streamlit run streamlit_app.py
@@ -56,42 +56,11 @@ The app will open at `http://localhost:8501`
 
 ### Step 1: Prepare Your Code
 
-1. **Keep essential files only:**
-   - `streamlit_app.py`
-   - `model_logic.py`
-   - `requirements.txt`
-   - `.streamlit/config.toml`
-
-2. **Update requirements.txt for cloud:**
-   
-   For Streamlit Cloud, you'll need a cloud AI API instead of local Ollama. Update `requirements.txt`:
-   
-```
-   streamlit>=1.28.0
-   requests>=2.31.0
-   openai>=1.0.0
-   
-```
-
-3. **Update model_logic.py for cloud:**
-   
-   Replace Ollama calls with OpenAI API:
-   
-```
-python
-   # Change these in model_logic.py:
-   
-   # Instead of ask_local_ai(), use:
-   from openai import OpenAI
-   client = OpenAI(api_key="your-api-key")
-   
-   response = client.chat.completions.create(
-       model="gpt-4",
-       messages=[{"role": "user", "content": prompt}]
-   )
-   return response.choices[0].message.content
-   
-```
+The following files are needed:
+- `streamlit_app.py`
+- `model_logic.py`
+- `requirements.txt`
+- `.streamlit/config.toml`
 
 ### Step 2: Push to GitHub
 
@@ -100,7 +69,7 @@ bash
 # Initialize git (if not already)
 git init
 git add .
-git commit -m "Convert to Streamlit app"
+git commit -m "Update to use Groq API"
 
 # Create GitHub repository and push
 git remote add origin https://github.com/YOUR_USERNAME/ai-meeting-analyzer.git
@@ -121,58 +90,59 @@ git push -u origin main
    - Branch: `main`
    - Main file path: `streamlit_app.py`
 
-5. **Click "Deploy"**
-
-### Step 4: Set Environment Variables (for Cloud AI)
-
-In Streamlit Cloud dashboard:
-
-1. Go to your app settings
-2. Click "Secrets"
-3. Add your API keys:
+5. **Add API Key in Secrets:**
+   
+   In the Streamlit Cloud app settings, find "Secrets" and add:
+   
    
 ```
-   OPENAI_API_KEY=sk-your-key-here
+   GROQ_API_KEY = "your_api_key_here"
    
 ```
+
+6. **Click "Deploy"**
 
 ## ⚠️ Important Notes
 
-### Local vs Cloud Deployment
+### Groq API
 
-| Feature | Local (Ollama) | Cloud (OpenAI) |
-|---------|---------------|----------------|
-| AI Model | llama3 (local) | GPT-4/GPT-3.5 |
-| Cost | Free | Pay-per-use |
-| Setup | Requires Ollama | Just API key |
-| Speed | Depends on hardware | Fast (API) |
+- **Free Tier:** Groq offers free API access with generous limits
+- **Model Used:** llama-3.1-70b-versatile (fast inference)
+- **Rate Limits:** Check Groq console for current limits
 
-### For Full Local Experience
+### Environment Variables
 
-To keep using local AI with Streamlit Cloud:
+| Variable | Description | Required |
+|----------|-------------|----------|
+| GROQ_API_KEY | Your Groq API key | Yes |
 
-1. Use **Streamlit Community Cloud** with a cloud service
-2. Or host Ollama on a cloud server (AWS, GCP, etc.)
-3. Update `MODEL_API_URL` in `model_logic.py` to point to your cloud Ollama instance
+### Features Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Meeting Analysis | ✅ | Uses Groq Llama 3.1 |
+| Chat Q&A | ✅ | Uses Groq Llama 3.1 |
+| Audio Transcription | ⚠️ | Requires openai-whisper |
+| PDF Export | ⚠️ | Requires reportlab |
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-1. **"Cannot connect to Ollama"**
-   - Ensure Ollama is running: `ollama serve`
-   - Check MODEL_API_URL in model_logic.py
+1. **"GROQ_API_KEY not found"**
+   - Add GROQ_API_KEY in Streamlit Cloud Secrets
+   - Or set as environment variable locally
 
 2. **"Whisper not found"**
    - Install: `pip install openai-whisper`
-   - Note: Whisper requires more resources
+   - Note: Requires more resources
 
 3. **"ReportLab not found"**
    - Install: `pip install reportlab`
 
-4. **Streamlit Cloud errors**
-   - Check app logs in Streamlit Cloud dashboard
-   - Ensure all imports are in requirements.txt
+4. **API Errors**
+   - Check Groq console for API status
+   - Verify your API key is valid
 
 ## 📄 License
 

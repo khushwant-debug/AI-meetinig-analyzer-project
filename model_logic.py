@@ -1,18 +1,21 @@
 """
 AI Meeting Analyzer - Model Logic
 =================================
-This file contains all the AI/ML logic extracted from the original Flask app.
-Keep this separate from the UI to maintain clean separation of concerns.
+This file contains all the AI/ML logic for the Streamlit app.
+Uses Groq API for cloud-based inference.
+
+IMPORTANT: Set GROQ_API_KEY in Streamlit Cloud secrets or as environment variable.
 """
 
+import os
 import json
-import requests
+import re
 import tempfile
 from io import BytesIO
 
-# Ollama API configuration
-MODEL_API_URL = "http://localhost:11434"
-DEFAULT_MODEL = "llama3"
+# Groq API configuration
+# For Streamlit Cloud: Add GROQ_API_KEY in app settings (Secrets)
+# For local: Set environment variable or create .env file
 
 # Try to import optional dependencies
 try:
@@ -32,11 +35,32 @@ except ImportError:
 _whisper_model = None
 
 
+def get_groq_client():
+    """Initialize and return Groq client."""
+    try:
+        from groq import Groq
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "GROQ_API_KEY not found. "
+                "For Streamlit Cloud: Add it in app settings (Secrets). "
+                "For local: Set environment variable: export GROQ_API_KEY='your-key'"
+            )
+        return Groq(api_key=api_key)
+    except ImportError:
+        raise ImportError(
+            "Groq SDK not installed. Install with: pip install groq"
+        )
+
+
 def get_whisper_model():
     """Load and return Whisper model (lazy loading)."""
     global _whisper_model
     if not WHISPER_AVAILABLE:
-        raise ImportError("Whisper is not installed. Install with: pip install openai-whisper")
+        raise ImportError(
+            "Whisper is not installed. "
+            "Install with: pip install openai-whisper"
+        )
     
     if _whisper_model is None:
         _whisper_model = whisper.load_model("base")
@@ -48,42 +72,7 @@ def get_whisper_model():
 # CORE AI FUNCTIONS
 # ==========================================
 
-def ask_local_ai(prompt: str, model: str = DEFAULT_MODEL) -> str:
-    """
-    Send a prompt to the local Ollama API and get the response.
-    
-    Args:
-        prompt: The prompt to send to the AI
-        model: The model to use (default: llama3)
-    
-    Returns:
-        The AI's response as a string
-    """
-    try:
-        res = requests.post(
-            f"{MODEL_API_URL}/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": False
-            },
-            timeout=120  # Add timeout for long-running requests
-        )
-        
-        if res.status_code == 200:
-            return res.json()["response"]
-        else:
-            raise Exception(f"Ollama API error: {res.status_code} - {res.text}")
-            
-    except requests.exceptions.ConnectionError:
-        raise ConnectionError(
-            f"Cannot connect to Ollama at {MODEL_API_URL}. "
-            "Please ensure Ollama is running. "
-            "Start with: ollama serve"
-        )
-
-
-def analyze_meeting(meeting_text: str, meeting_title: str = "Untitled Meeting") -> dict:
+def analyze_meeting(meeting_text: str, meeting_title: str = "Meeting Analysis") -> dict:
     """
     Analyze meeting text and extract summary, key points, decisions, action items.
     
@@ -97,30 +86,47 @@ def analyze_meeting(meeting_text: str, meeting_title: str = "Untitled Meeting") 
         - key_points: List of key points
         - decisions: List of decisions made
         - action_items: List of action items with assignees
-        - confidence: Confidence score (0-100)
+        - confidence: Confidence score
         - meeting_title: The meeting title
     """
     if not meeting_text or not meeting_text.strip():
         raise ValueError("Meeting text cannot be empty")
     
-    prompt = f"""
-Return ONLY valid JSON. No explanation.
+    prompt = f"""You are an AI meeting analyzer. Analyze the following meeting notes and return a structured JSON response.
 
-Format:
+Return ONLY valid JSON. No explanation before or after.
+
+Required JSON format:
 {{
-  "summary": "",
-  "key_points": [],
-  "decisions": [],
-  "action_items": [],
-  "confidence": 90
+  "summary": "A brief summary of the meeting (2-3 sentences)",
+  "key_points": ["Point 1", "Point 2", "Point 3"],
+  "decisions": ["Decision 1", "Decision 2"],
+  "action_items": ["Action item 1", "Action item 2"],
+  "confidence": "A confidence score from 0-100%"
 }}
 
-Meeting text:
+Meeting notes:
 {meeting_text}
-"""
-    
+
+JSON:"""
+
     try:
-        ai_text = ask_local_ai(prompt)
+        client = get_groq_client()
+        
+        response = client.chat.completions.create(
+            model="llama-3.1-70b-versatile",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=2000,
+            response_format={"type": "json_object"}
+        )
+        
+        ai_text = response.choices[0].message.content
         
         # Parse the JSON response
         result = json.loads(ai_text)
@@ -131,7 +137,7 @@ Meeting text:
             "key_points": result.get("key_points", []),
             "decisions": result.get("decisions", []),
             "action_items": result.get("action_items", []),
-            "confidence": result.get("confidence", 50),
+            "confidence": result.get("confidence", "50%"),
             "meeting_title": meeting_title
         }
         
@@ -160,31 +166,32 @@ def chat_about_meeting(question: str, meeting_notes: str) -> str:
     if not meeting_notes or not meeting_notes.strip():
         raise ValueError("Meeting notes cannot be empty")
     
-    prompt = f"""
-You are an AI meeting assistant.
-Answer ONLY using the meeting context provided.
-Be concise and helpful.
+    prompt = f"""You are an AI meeting assistant. Answer the user's question based ONLY on the meeting context provided.
 
-Meeting:
+Meeting context:
 {meeting_notes}
 
-Question:
-{question}
-"""
-    
+Question: {question}
+
+Provide a clear, helpful answer based only on the meeting notes above."""
+
     try:
-        # Try using the ollama library first
-        try:
-            import ollama
-            response = ollama.chat(
-                model=DEFAULT_MODEL,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            return response["message"]["content"]
-        except ImportError:
-            # Fall back to API call
-            return ask_local_ai(prompt)
-            
+        client = get_groq_client()
+        
+        response = client.chat.completions.create(
+            model="llama-3.1-70b-versatile",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.5,
+            max_tokens=1000
+        )
+        
+        return response.choices[0].message.content
+        
     except Exception as e:
         raise Exception(f"Chat failed: {str(e)}")
 
@@ -281,8 +288,8 @@ def export_to_pdf(analysis_result: dict) -> BytesIO:
         elements.append(Spacer(1, 15))
     
     # Confidence Score
-    confidence = analysis_result.get("confidence", 0)
-    elements.append(Paragraph(f"Confidence Score: {confidence}%", styles["Heading2"]))
+    confidence = analysis_result.get("confidence", "N/A")
+    elements.append(f"Confidence Score: {confidence}", styles["Heading2"])
     
     doc.build(elements)
     buffer.seek(0)
@@ -294,22 +301,12 @@ def export_to_pdf(analysis_result: dict) -> BytesIO:
 # UTILITY FUNCTIONS
 # ==========================================
 
-def check_ollama_connection() -> bool:
-    """Check if Ollama is running and accessible."""
+def check_groq_connection() -> bool:
+    """Check if Groq API is accessible."""
     try:
-        response = requests.get(f"{MODEL_API_URL}/api/tags", timeout=5)
-        return response.status_code == 200
-    except:
+        client = get_groq_client()
+        # Try a simple API call to verify
+        client.models.list()
+        return True
+    except Exception:
         return False
-
-
-def get_available_models() -> list:
-    """Get list of available Ollama models."""
-    try:
-        response = requests.get(f"{MODEL_API_URL}/api/tags", timeout=5)
-        if response.status_code == 200:
-            models = response.json().get("models", [])
-            return [m["name"] for m in models]
-        return []
-    except:
-        return []

@@ -2,18 +2,17 @@
 AI Meeting Analyzer - Streamlit App
 ===================================
 A Streamlit-based interface for analyzing meeting notes.
-Converted from Flask app for easy deployment on Streamlit Cloud.
+Uses Groq API for cloud-based AI inference.
 
 Usage:
     streamlit run streamlit_app.py
 
 Requirements:
-    - Ollama running locally (for local AI)
-    - Or configure for cloud API deployment
+    - GROQ_API_KEY environment variable (for Streamlit Cloud, add in Secrets)
+    - Set up: pip install groq
 """
 
 import streamlit as st
-import pandas as pd
 from io import BytesIO
 
 # Import our model logic
@@ -22,10 +21,10 @@ from model_logic import (
     chat_about_meeting,
     transcribe_audio,
     export_to_pdf,
-    check_ollama_connection,
+    check_groq_connection,
     WHISPER_AVAILABLE,
     REPORTLAB_AVAILABLE,
-    MODEL_API_URL
+    get_groq_client
 )
 
 # ==========================================
@@ -94,7 +93,7 @@ st.markdown("""
 # ==========================================
 
 def display_analysis_results(result: dict):
-    """Display the analysis results in a formatted way."""
+    """Display the analysis results in separate sections."""
     
     # Meeting Title
     meeting_title = result.get("meeting_title", "Meeting Analysis")
@@ -105,42 +104,53 @@ def display_analysis_results(result: dict):
     st.subheader("📝 Summary")
     st.markdown(f">{result.get('summary', 'No summary available')}")
     
-    # Create columns for layout
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Key Points
-        key_points = result.get("key_points", [])
-        if key_points:
-            st.subheader("🔑 Key Points")
-            for i, point in enumerate(key_points, 1):
-                st.markdown(f"{i}. {point}")
-    
-    with col2:
-        # Decisions
-        decisions = result.get("decisions", [])
-        if decisions:
-            st.subheader("✅ Decisions")
-            for i, decision in enumerate(decisions, 1):
-                st.markdown(f"{i}. {decision}")
-    
-    # Action Items (full width)
     st.divider()
+    
+    # Key Points
+    st.subheader("🔑 Key Points")
+    key_points = result.get("key_points", [])
+    if key_points:
+        for i, point in enumerate(key_points, 1):
+            st.markdown(f"{i}. {point}")
+    else:
+        st.info("No key points identified")
+    
+    st.divider()
+    
+    # Decisions
+    st.subheader("✅ Decisions")
+    decisions = result.get("decisions", [])
+    if decisions:
+        for i, decision in enumerate(decisions, 1):
+            st.markdown(f"{i}. {decision}")
+    else:
+        st.info("No decisions identified")
+    
+    st.divider()
+    
+    # Action Items
+    st.subheader("🎯 Action Items")
     action_items = result.get("action_items", [])
     if action_items:
-        st.subheader("🎯 Action Items")
         for i, item in enumerate(action_items, 1):
             st.markdown(f"{i}. {item}")
+    else:
+        st.info("No action items identified")
+    
+    st.divider()
     
     # Confidence Score
-    confidence = result.get("confidence", 0)
-    st.divider()
     st.subheader("📊 Confidence Score")
+    confidence = result.get("confidence", "N/A")
     
-    # Display confidence as progress bar
-    confidence_color = "green" if confidence >= 70 else "orange" if confidence >= 50 else "red"
-    st.progress(confidence)
-    st.markdown(f":{confidence_color}[**{confidence}%**]")
+    # Try to parse confidence as number for progress bar
+    try:
+        confidence_numeric = int(confidence.strip('%').strip())
+        confidence_color = "green" if confidence_numeric >= 70 else "orange" if confidence_numeric >= 50 else "red"
+        st.progress(confidence_numeric)
+        st.markdown(f":{confidence_color}[**{confidence}**]")
+    except (ValueError, AttributeError):
+        st.markdown(f"**{confidence}**")
     
     # PDF Export
     if REPORTLAB_AVAILABLE:
@@ -157,21 +167,27 @@ def display_analysis_results(result: dict):
             st.warning(f"PDF export failed: {str(e)}")
 
 
-def check_ollama_status():
-    """Check and display Ollama connection status."""
+def check_api_status():
+    """Check and display API connection status."""
     with st.sidebar:
         st.header("🔧 Configuration")
         
-        if check_ollama_connection():
-            st.success("✅ Ollama is connected")
-        else:
-            st.error(f"❌ Cannot connect to Ollama at {MODEL_API_URL}")
+        try:
+            if check_groq_connection():
+                st.success("✅ Groq API connected")
+            else:
+                st.error("❌ Cannot connect to Groq API")
+        except ValueError as e:
+            st.error(f"❌ API Key not configured")
             st.info("""
             **To fix:**
-            1. Make sure Ollama is installed
-            2. Run `ollama serve` in terminal
-            3. Pull model with: `ollama pull llama3`
+            1. For Streamlit Cloud: Add GROQ_API_KEY in app Secrets
+            2. For local: Set environment variable:
+               Windows: set GROQ_API_KEY=your-key
+               Mac/Linux: export GROQ_API_KEY=your-key
             """)
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}")
         
         # Display optional dependencies status
         st.subheader("📦 Dependencies")
@@ -190,8 +206,8 @@ def main():
     st.markdown('<p class="main-header">🤖 AI Meeting Analyzer</p>', unsafe_allow_html=True)
     st.markdown("---")
     
-    # Check Ollama status in sidebar
-    check_ollama_status()
+    # Check API status in sidebar
+    check_api_status()
     
     # Initialize session state
     if "analysis_result" not in st.session_state:
@@ -243,7 +259,7 @@ def main():
             )
             
             if audio_file is not None:
-                if st.button(" Transcription Audio", type="primary"):
+                if st.button("🎤 Transcribe Audio", type="primary"):
                     with st.spinner("Transcribing audio..."):
                         try:
                             transcribed_text = transcribe_audio(audio_file)
@@ -295,14 +311,15 @@ def main():
                 
             st.success("✅ Analysis complete!")
             
+        except ValueError as e:
+            st.error(f"❌ Configuration Error: {str(e)}")
+            st.info("""
+            **Fix: Add GROQ_API_KEY**
+            - Local: Set environment variable
+            - Streamlit Cloud: Add in app Secrets
+            """)
         except Exception as e:
             st.error(f"❌ Analysis failed: {str(e)}")
-            st.info("""
-            **Troubleshooting:**
-            - Make sure Ollama is running
-            - Check the model is downloaded: `ollama pull llama3`
-            - Verify the API URL is correct
-            """)
     
     # ==========================================
     # RESULTS DISPLAY
@@ -350,8 +367,10 @@ def main():
                         st.session_state.chat_history.append((prompt, answer))
                         st.rerun()
                         
+                except ValueError as e:
+                    st.error(f"❌ Configuration Error: {str(e)}")
                 except Exception as e:
-                    st.error(f"Chat failed: {str(e)}")
+                    st.error(f"❌ Chat failed: {str(e)}")
     
     # ==========================================
     # FOOTER
@@ -360,7 +379,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #666; font-size: 0.8rem;">
-        <p>AI Meeting Analyzer | Powered by Ollama (llama3)</p>
+        <p>AI Meeting Analyzer | Powered by Groq (LLama 3.1)</p>
         <p>Built with Streamlit</p>
     </div>
     """, unsafe_allow_html=True)
