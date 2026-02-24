@@ -17,6 +17,9 @@ from io import BytesIO
 # For Streamlit Cloud: Add GROQ_API_KEY in app settings (Secrets)
 # For local: Set environment variable or create .env file
 
+# Supported Groq model - using llama-3.1-8b-instant (fast, free, stable)
+GROQ_MODEL = "llama-3.1-8b-instant"
+
 # Try to import optional dependencies
 try:
     import whisper
@@ -114,7 +117,7 @@ JSON:"""
         client = get_groq_client()
         
         response = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model=GROQ_MODEL,
             messages=[
                 {
                     "role": "user",
@@ -146,7 +149,16 @@ JSON:"""
     except json.JSONDecodeError as e:
         raise ValueError(f"Failed to parse AI response as JSON: {e}")
     except Exception as e:
-        raise Exception(f"Analysis failed: {str(e)}")
+        error_msg = str(e)
+        # Provide user-friendly error messages
+        if "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+            raise Exception("API authentication failed. Please check your GROQ_API_KEY in Streamlit Secrets.")
+        elif "rate limit" in error_msg.lower():
+            raise Exception("Rate limit exceeded. Please wait a moment and try again.")
+        elif "model" in error_msg.lower():
+            raise Exception(f"Model error: {error_msg}. Please contact support.")
+        else:
+            raise Exception(f"Analysis failed: {error_msg}")
 
 
 def chat_about_meeting(question: str, meeting_notes: str) -> str:
@@ -179,7 +191,7 @@ Provide a clear, helpful answer based only on the meeting notes above."""
         client = get_groq_client()
         
         response = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model=GROQ_MODEL,
             messages=[
                 {
                     "role": "user",
@@ -193,7 +205,14 @@ Provide a clear, helpful answer based only on the meeting notes above."""
         return response.choices[0].message.content
         
     except Exception as e:
-        raise Exception(f"Chat failed: {str(e)}")
+        error_msg = str(e)
+        # Provide user-friendly error messages
+        if "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+            raise Exception("API authentication failed. Please check your GROQ_API_KEY in Streamlit Secrets.")
+        elif "rate limit" in error_msg.lower():
+            raise Exception("Rate limit exceeded. Please wait a moment and try again.")
+        else:
+            raise Exception(f"Chat failed: {error_msg}")
 
 
 def transcribe_audio(audio_file) -> str:
@@ -289,7 +308,7 @@ def export_to_pdf(analysis_result: dict) -> BytesIO:
     
     # Confidence Score
     confidence = analysis_result.get("confidence", "N/A")
-    elements.append(f"Confidence Score: {confidence}", styles["Heading2"])
+    elements.append(Paragraph(f"Confidence Score: {confidence}", styles["Heading2"]))
     
     doc.build(elements)
     buffer.seek(0)
