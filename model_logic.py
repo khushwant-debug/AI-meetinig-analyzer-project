@@ -9,9 +9,6 @@ IMPORTANT: Set GROQ_API_KEY in Streamlit Cloud secrets or as environment variabl
 
 import os
 import json
-import re
-import tempfile
-from io import BytesIO
 
 # Groq API configuration
 # For Streamlit Cloud: Add GROQ_API_KEY in app settings (Secrets)
@@ -19,23 +16,6 @@ from io import BytesIO
 
 # Supported Groq model - using llama-3.3-70b-versatile (latest, stable)
 GROQ_MODEL = "llama-3.3-70b-versatile"
-
-# Try to import optional dependencies
-try:
-    import whisper
-    WHISPER_AVAILABLE = True
-except ImportError:
-    WHISPER_AVAILABLE = False
-
-try:
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-    from reportlab.lib.styles import getSampleStyleSheet
-    REPORTLAB_AVAILABLE = True
-except ImportError:
-    REPORTLAB_AVAILABLE = False
-
-# Global whisper model (lazy loaded)
-_whisper_model = None
 
 
 def get_groq_client():
@@ -54,21 +34,6 @@ def get_groq_client():
         raise ImportError(
             "Groq SDK not installed. Install with: pip install groq"
         )
-
-
-def get_whisper_model():
-    """Load and return Whisper model (lazy loading)."""
-    global _whisper_model
-    if not WHISPER_AVAILABLE:
-        raise ImportError(
-            "Whisper is not installed. "
-            "Install with: pip install openai-whisper"
-        )
-    
-    if _whisper_model is None:
-        _whisper_model = whisper.load_model("base")
-    
-    return _whisper_model
 
 
 # ==========================================
@@ -213,107 +178,6 @@ Provide a clear, helpful answer based only on the meeting notes above."""
             raise Exception("Rate limit exceeded. Please wait a moment and try again.")
         else:
             raise Exception(f"Chat failed: {error_msg}")
-
-
-def transcribe_audio(audio_file) -> str:
-    """
-    Transcribe an audio file using Whisper.
-    
-    Args:
-        audio_file: File-like object or path to audio file
-    
-    Returns:
-        The transcribed text
-    """
-    if not WHISPER_AVAILABLE:
-        raise ImportError(
-            "Whisper is not available. "
-            "Install with: pip install openai-whisper"
-        )
-    
-    # Save uploaded file to temp file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp:
-        audio_file.save(temp.name)
-        temp_path = temp.name
-    
-    try:
-        model = get_whisper_model()
-        result = model.transcribe(temp_path)
-        return result["text"]
-    finally:
-        # Clean up temp file
-        import os
-        try:
-            os.unlink(temp_path)
-        except:
-            pass
-
-
-def export_to_pdf(analysis_result: dict) -> BytesIO:
-    """
-    Export meeting analysis to PDF.
-    
-    Args:
-        analysis_result: Dictionary with analysis results
-    
-    Returns:
-        BytesIO buffer containing the PDF
-    """
-    if not REPORTLAB_AVAILABLE:
-        raise ImportError(
-            "ReportLab is not available. "
-            "Install with: pip install reportlab"
-        )
-    
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer)
-    styles = getSampleStyleSheet()
-    
-    elements = []
-    
-    # Title
-    meeting_title = analysis_result.get("meeting_title", "Meeting Summary")
-    elements.append(Paragraph(meeting_title, styles["Heading1"]))
-    elements.append(Spacer(1, 20))
-    
-    # Summary
-    summary = analysis_result.get("summary", "No summary provided")
-    elements.append(Paragraph("Summary", styles["Heading2"]))
-    elements.append(Paragraph(summary, styles["BodyText"]))
-    elements.append(Spacer(1, 15))
-    
-    # Key Points
-    key_points = analysis_result.get("key_points", [])
-    if key_points:
-        elements.append(Paragraph("Key Points", styles["Heading2"]))
-        for point in key_points:
-            elements.append(Paragraph(f"• {point}", styles["BodyText"]))
-        elements.append(Spacer(1, 15))
-    
-    # Decisions
-    decisions = analysis_result.get("decisions", [])
-    if decisions:
-        elements.append(Paragraph("Decisions", styles["Heading2"]))
-        for decision in decisions:
-            elements.append(Paragraph(f"• {decision}", styles["BodyText"]))
-        elements.append(Spacer(1, 15))
-    
-    # Action Items
-    action_items = analysis_result.get("action_items", [])
-    if action_items:
-        elements.append(Paragraph("Action Items", styles["Heading2"]))
-        for item in action_items:
-            elements.append(Paragraph(f"• {item}", styles["BodyText"]))
-        elements.append(Spacer(1, 15))
-    
-    # Confidence Score
-    confidence = analysis_result.get("confidence", "N/A")
-    elements.append(Paragraph(f"Confidence Score: {confidence}", styles["Heading2"]))
-    
-    doc.build(elements)
-    buffer.seek(0)
-    
-    return buffer
 
 
 # ==========================================

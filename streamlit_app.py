@@ -13,17 +13,12 @@ Requirements:
 """
 
 import streamlit as st
-from io import BytesIO
 
 # Import our model logic
 from model_logic import (
     analyze_meeting,
     chat_about_meeting,
-    transcribe_audio,
-    export_to_pdf,
     check_groq_connection,
-    WHISPER_AVAILABLE,
-    REPORTLAB_AVAILABLE,
     get_groq_client
 )
 
@@ -61,28 +56,8 @@ st.markdown("""
         border: 1px solid #c3e6cb;
         color: #155724;
     }
-    .warning-box {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        background-color: #fff3cd;
-        border: 1px solid #ffeeba;
-        color: #856404;
-    }
-    .error-box {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-    }
     .stButton > button {
         width: 100%;
-    }
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        text-align: center;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -151,20 +126,6 @@ def display_analysis_results(result: dict):
         st.markdown(f":{confidence_color}[**{confidence}**]")
     except (ValueError, AttributeError):
         st.markdown(f"**{confidence}**")
-    
-    # PDF Export
-    if REPORTLAB_AVAILABLE:
-        st.divider()
-        try:
-            pdf_buffer = export_to_pdf(result)
-            st.download_button(
-                label="📄 Download PDF Report",
-                data=pdf_buffer,
-                file_name="meeting_report.pdf",
-                mime="application/pdf"
-            )
-        except Exception as e:
-            st.warning(f"PDF export failed: {str(e)}")
 
 
 def check_api_status():
@@ -188,11 +149,6 @@ def check_api_status():
             """)
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
-        
-        # Display optional dependencies status
-        st.subheader("📦 Dependencies")
-        st.write(f"- Whisper: {'✅ Available' if WHISPER_AVAILABLE else '❌ Not installed'}")
-        st.write(f"- ReportLab: {'✅ Available' if REPORTLAB_AVAILABLE else '❌ Not installed'}")
 
 
 # ==========================================
@@ -237,39 +193,6 @@ def main():
         placeholder="Paste your meeting notes or transcript here...",
         help="Enter the raw meeting notes, transcript, or any text you want to analyze"
     )
-    
-    # ==========================================
-    # AUDIO TRANSCRIPTION (Optional)
-    # ==========================================
-    
-    st.subheader("🎤 Audio Transcription (Optional)")
-    
-    audio_option = st.radio(
-        "Would you like to transcribe an audio file?",
-        ["No", "Yes"],
-        horizontal=True
-    )
-    
-    if audio_option == "Yes":
-        if WHISPER_AVAILABLE:
-            audio_file = st.file_uploader(
-                "Upload audio file",
-                type=["mp3", "wav", "m4a", "ogg"],
-                help="Supported formats: MP3, WAV, M4A, OGG"
-            )
-            
-            if audio_file is not None:
-                if st.button("🎤 Transcribe Audio", type="primary"):
-                    with st.spinner("Transcribing audio..."):
-                        try:
-                            transcribed_text = transcribe_audio(audio_file)
-                            meeting_text = meeting_text + "\n\n" + transcribed_text if meeting_text else transcribed_text
-                            st.success("Audio transcribed successfully!")
-                            st.text_area("Transcribed text (editable)", value=meeting_text, height=150, key="transcribed")
-                        except Exception as e:
-                            st.error(f"Transcription failed: {str(e)}")
-        else:
-            st.warning("Whisper is not installed. Install with: pip install openai-whisper")
     
     st.divider()
     
@@ -379,7 +302,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #666; font-size: 0.8rem;">
-        <p>AI Meeting Analyzer | Powered by Groq (LLama 3.1)</p>
+        <p>AI Meeting Analyzer | Powered by Groq (LLama 3.3)</p>
         <p>Built with Streamlit</p>
     </div>
     """, unsafe_allow_html=True)

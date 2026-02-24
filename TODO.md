@@ -1,6 +1,0 @@
-- [x] Modify app.py: Add meeting_title extraction and include in result dictionary in analyze() function.
-- [x] Modify templates/Index.html: Add input field for meeting title.
-- [x] Modify static/script.js: Update fetch request to include meeting_title in JSON payload.
-- [x] Add h3 element with id="meeting-title-output" at the top of the Summary card in templates/Index.html.
-- [x] Update static/script.js to display the meeting_title in the h3 element after analysis.
-- [x] Test the changes by running the app.
