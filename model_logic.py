@@ -17,8 +17,8 @@ from io import BytesIO
 # For Streamlit Cloud: Add GROQ_API_KEY in app settings (Secrets)
 # For local: Set environment variable or create .env file
 
-# Supported Groq model - using llama-3.1-8b-instant (fast, free, stable)
-GROQ_MODEL = "llama-3.1-8b-instant"
+# Supported Groq model - using llama-3.3-70b-versatile (latest, stable)
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # Try to import optional dependencies
 try:
